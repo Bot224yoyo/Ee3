@@ -1,112 +1,37 @@
-local assetId = 15852383136 -- Thay thế bằng ID Asset của model
-local InsertService = game:GetService("InsertService")
+local DataStoreService = game:GetService("DataStoreService")
+local toolStore = DataStoreService:GetDataStore("ToolSaveData") -- Tạo DataStore
 
-for _, player in pairs(game.Players:GetPlayers()) do
-    local tool = Instance.new("Tool")
-    tool.Name = "trienmc fruit"
-    tool.RequiresHandle = true
+local toolName = "Admin Combat" -- Đổi tên Tool thành Admin Combat
 
-    local handle = Instance.new("Part")
-    handle.Name = "Handle"
-    handle.Size = Vector3.new(2, 2, 2)
-    handle.Color = Color3.fromRGB(255, 0, 0)
-    handle.Material = Enum.Material.SmoothPlastic
-    handle.Parent = tool
-
-    if assetId and assetId ~= 0 then
-        local success, model = pcall(function()
-            return InsertService:LoadAsset(assetId)
-        end)
-
-        if success and model then
-            model.Parent = tool
-            local modelHandle = model:FindFirstChild("Handle")
-            if modelHandle then
-                modelHandle.Parent = tool
-                handle:Destroy() -- Xóa Handle cũ nếu model có Handle
-            end
-        else
-            warn("Không thể tải model từ Asset ID:", assetId)
-        end
+-- Khi người chơi rời game, lưu trạng thái Tool
+game.Players.PlayerRemoving:Connect(function(player)
+    local hasTool = false
+    if player.Backpack:FindFirstChild(toolName) or player.Character and player.Character:FindFirstChild(toolName) then
+        hasTool = true
     end
+    
+    toolStore:SetAsync(player.UserId, hasTool)
+end)
 
-    tool.Parent = player.Backpack
+-- Khi người chơi tham gia game, kiểm tra xem họ có Tool hay không
+game.Players.PlayerAdded:Connect(function(player)
+    local success, hasTool = pcall(function()
+        return toolStore:GetAsync(player.UserId)
+    end)
+    
+    if success and hasTool then
+        -- Tạo Tool mới cho người chơi
+        local tool = Instance.new("Tool")
+        tool.Name = toolName
 
-    -- Thêm script UI vào tool
-    local scriptInstance = Instance.new("Script")
-    scriptInstance.Name = "FruitScript"
-    scriptInstance.Parent = tool
-    scriptInstance.Source = [[
-        local tool = script.Parent
-        local player = nil
-        local gui = nil
+        local handle = Instance.new("Part") -- Tạo Handle
+        handle.Name = "Handle"
+        handle.Size = Vector3.new(1, 1, 1)
+        handle.BrickColor = BrickColor.new("Bright red")
+        handle.CanCollide = false
+        handle.Parent = tool
 
-        tool.Activated:Connect(function()
-            if not player then
-                player = game.Players:GetPlayerFromCharacter(tool.Parent)
-            end
-
-            if player and not gui then
-                gui = Instance.new("ScreenGui", player.PlayerGui)
-                gui.Name = "FruitGui"
-
-                local frame = Instance.new("Frame", gui)
-                frame.Size = UDim2.new(0, 200, 0, 100)
-                frame.Position = UDim2.new(0.5, -100, 0.5, -50)
-                frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-
-                local eatButton = Instance.new("TextButton", frame)
-                eatButton.Size = UDim2.new(1, 0, 0.5, 0)
-                eatButton.Position = UDim2.new(0, 0, 0, 0)
-                eatButton.Text = "Ăn"
-                eatButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-
-                local dropButton = Instance.new("TextButton", frame)
-                dropButton.Size = UDim2.new(1, 0, 0.5, 0)
-                dropButton.Position = UDim2.new(0, 0, 0.5, 0)
-                dropButton.Text = "Vứt"
-                dropButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-
-                eatButton.MouseButton1Click:Connect(function()
-                    tool:Destroy() -- Xóa tool "trienmc fruit"
-                    gui:Destroy() -- Xóa UI
-                    local newTool = Instance.new("Tool")
-                    newTool.Name = "trienmc"
-                    newTool.RequiresHandle = true
-
-                    local newHandle = Instance.new("Part")
-                    newHandle.Name = "Handle"
-                    newHandle.Size = Vector3.new(2, 2, 2)
-                    newHandle.Color = Color3.fromRGB(0, 0, 255)
-                    newHandle.Material = Enum.Material.Neon
-                    newHandle.Parent = newTool
-
-                    newTool.Parent = player.Backpack
-
-                    -- Script gây damage khi tool này được kích hoạt
-                    newTool.Activated:Connect(function()
-                        local char = player.Character
-                        if char then
-                            for _, otherPlayer in pairs(game.Players:GetPlayers()) do
-                                if otherPlayer ~= player and otherPlayer.Character then
-                                    local humanoid = otherPlayer.Character:FindFirstChildOfClass("Humanoid")
-                                    if humanoid then
-                                        local distance = (char.PrimaryPart.Position - otherPlayer.Character.PrimaryPart.Position).Magnitude
-                                        if distance <= 10 then -- Khoảng cách 10 đơn vị
-                                            humanoid.Health = 0 -- Gây chết ngay lập tức
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                end)
-
-                dropButton.MouseButton1Click:Connect(function()
-                    gui:Destroy()
-                    tool.Parent = workspace -- Đưa tool ra khỏi backpack (vứt ra ngoài)
-                end)
-            end
-        end)
-    ]]
-end
+        tool.RequiresHandle = true
+        tool.Parent = player.Backpack -- Đưa Tool vào túi đồ
+    end
+end)
