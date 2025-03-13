@@ -1,0 +1,7 @@
+-- Script để cấp tool "trienmc fruit" cho tất cả người chơi trong Roblox
+
+for _, player in pairs(game.Players:GetPlayers()) do
+    local tool = Instance.new("Tool")
+    tool.Name = "trienmc fruit"
+    tool.Parent = player.Backpack
+end
