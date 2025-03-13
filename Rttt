@@ -1,35 +1,34 @@
 local assetId = 15852383136 -- Thay thế bằng ID Asset của model
-
 local InsertService = game:GetService("InsertService")
 
 for _, player in pairs(game.Players:GetPlayers()) do
-    -- Tạo tool
     local tool = Instance.new("Tool")
     tool.Name = "trienmc fruit"
     tool.RequiresHandle = true
 
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(2, 2, 2)
+    handle.Color = Color3.fromRGB(255, 0, 0)
+    handle.Material = Enum.Material.SmoothPlastic
+    handle.Parent = tool
+
     if assetId and assetId ~= 0 then
-        -- Nếu có Asset ID, chèn model từ Asset ID
         local success, model = pcall(function()
             return InsertService:LoadAsset(assetId)
         end)
-        
+
         if success and model then
             model.Parent = tool
-            model.PrimaryPart = model:FindFirstChild("Handle") -- Đảm bảo có Handle
+            local modelHandle = model:FindFirstChild("Handle")
+            if modelHandle then
+                modelHandle.Parent = tool
+                handle:Destroy() -- Xóa Handle cũ nếu model có Handle
+            end
         else
             warn("Không thể tải model từ Asset ID:", assetId)
         end
-    else
-        -- Nếu không có model từ Asset ID, tự tạo Handle đơn giản
-        local handle = Instance.new("Part")
-        handle.Name = "Handle"
-        handle.Size = Vector3.new(2, 2, 2)  -- Điều chỉnh kích thước
-        handle.Color = Color3.fromRGB(255, 0, 0)  -- Màu đỏ
-        handle.Material = Enum.Material.SmoothPlastic
-        handle.Parent = tool
     end
 
-    -- Cấp tool cho người chơi
     tool.Parent = player.Backpack
 end
